@@ -12,10 +12,10 @@ const SONGS = [
   },
   {
     id: 2,
-    title: 'Your Light',
-    artist: 'The Big Moon',
-    album: 'Walking Like We Do',
-    duration: '5:07'
+    title: 'Problemz',
+    artist: 'Jungle',
+    album: 'Volcano',
+    duration: '3:06'
   },
   {
     id: 3,
