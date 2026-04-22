@@ -99,19 +99,23 @@ export default function App() {
 
   const [userId, setUserId] = useState('')
   const [hasStarted, setHasStarted] = useState(false)
+  const [activePage, setActivePage] = useState('grade')
+
   const [currentSongIndex, setCurrentSongIndex] = useState(0)
   const [ratings, setRatings] = useState({})
   const [selectedTags, setSelectedTags] = useState([])
   const [allResponses, setAllResponses] = useState([])
   const [loading, setLoading] = useState(true)
-  const [showVectorInput, setShowVectorInput] = useState(false)
+
+  const [showVectorInput, setShowVectorInput] = useState(true)
   const [showTags, setShowTags] = useState(false)
   const [showResults, setShowResults] = useState(false)
+  const [showAdminPanel, setShowAdminPanel] = useState(false)
+
   const [vizSong, setVizSong] = useState(0)
   const [vizVector, setVizVector] = useState('wonder')
   const [highlightUser, setHighlightUser] = useState('')
-  const [showAdminPanel, setShowAdminPanel] = useState(false)
-  const [activePage, setActivePage] = useState('grade')
+
   const [toast, setToast] = useState('')
   const [selectedProfileUser, setSelectedProfileUser] = useState('')
 
@@ -136,6 +140,8 @@ export default function App() {
     'Relaxing'
   ]
 
+  const normalizedUserId = userId.trim().toUpperCase()
+
   useEffect(() => {
     const initialRatings = {}
     vectors.forEach((v) => {
@@ -153,8 +159,6 @@ export default function App() {
     const timer = setTimeout(() => setToast(''), 2600)
     return () => clearTimeout(timer)
   }, [toast])
-
-  const normalizedUserId = userId.trim().toUpperCase()
 
   const loadAllResponses = async () => {
     setLoading(true)
@@ -220,21 +224,9 @@ export default function App() {
   }, [hasStarted, nextUnratedSongIndex, normalizedUserId, selectedProfileUser])
 
   const accomplishments = [
-    {
-      title: 'First Rating',
-      description: '1 song graded',
-      unlocked: ratedCount >= 1
-    },
-    {
-      title: 'Getting Warm',
-      description: '5 songs graded',
-      unlocked: ratedCount >= 5
-    },
-    {
-      title: 'Deep Listener',
-      description: '10 songs graded',
-      unlocked: ratedCount >= 10
-    },
+    { title: 'First Rating', description: '1 song graded', unlocked: ratedCount >= 1 },
+    { title: 'Getting Warm', description: '5 songs graded', unlocked: ratedCount >= 5 },
+    { title: 'Deep Listener', description: '10 songs graded', unlocked: ratedCount >= 10 },
     {
       title: 'Completed Set',
       description: 'All 11 songs graded',
@@ -317,6 +309,30 @@ export default function App() {
     if (nextSong) {
       setCurrentSongIndex(nextSong.id - 1)
     }
+  }
+
+  const handleClearAllData = async () => {
+    const confirmed = window.confirm(
+      'Are you sure you want to delete ALL response data? This cannot be undone.'
+    )
+
+    if (!confirmed) return
+
+    const { error } = await supabase
+      .from('responses')
+      .delete()
+      .not('id', 'is', null)
+
+    if (error) {
+      console.error('Error clearing responses:', error)
+      alert(`Error clearing data: ${error.message}`)
+      return
+    }
+
+    await loadAllResponses()
+    setSelectedProfileUser(normalizedUserId || '')
+    setHighlightUser('')
+    setToast('All response data cleared.')
   }
 
   const toggleTag = (tag) => {
@@ -453,12 +469,22 @@ export default function App() {
                 <h2 className="text-2xl font-light text-slate-200 tracking-wide">
                   Admin: All Response Data
                 </h2>
-                <button
-                  onClick={() => setShowAdminPanel(false)}
-                  className="px-4 py-2 bg-slate-900 border border-slate-700 text-slate-300 rounded-lg hover:bg-slate-800 transition text-sm font-light"
-                >
-                  Close
-                </button>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleClearAllData}
+                    className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-400 transition text-sm font-medium"
+                  >
+                    Clear All Data
+                  </button>
+
+                  <button
+                    onClick={() => setShowAdminPanel(false)}
+                    className="px-4 py-2 bg-slate-900 border border-slate-700 text-slate-300 rounded-lg hover:bg-slate-800 transition text-sm font-light"
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
 
               <div className="overflow-x-auto">
@@ -497,11 +523,21 @@ export default function App() {
                               {songInfo?.artist || '-'}
                             </td>
                             <td className="p-3 text-slate-400 font-light">{r.timestamp_text}</td>
-                            <td className="p-3 text-cyan-300 font-light">{r.wonder?.toFixed(1) || '-'}</td>
-                            <td className="p-3 text-cyan-300 font-light">{r.joy?.toFixed(1) || '-'}</td>
-                            <td className="p-3 text-cyan-300 font-light">{r.power?.toFixed(1) || '-'}</td>
-                            <td className="p-3 text-cyan-300 font-light">{r.peace?.toFixed(1) || '-'}</td>
-                            <td className="p-3 text-cyan-300 font-light">{r.temporal?.toFixed(1) || '-'}</td>
+                            <td className="p-3 text-cyan-300 font-light">
+                              {r.wonder?.toFixed(1) || '-'}
+                            </td>
+                            <td className="p-3 text-cyan-300 font-light">
+                              {r.joy?.toFixed(1) || '-'}
+                            </td>
+                            <td className="p-3 text-cyan-300 font-light">
+                              {r.power?.toFixed(1) || '-'}
+                            </td>
+                            <td className="p-3 text-cyan-300 font-light">
+                              {r.peace?.toFixed(1) || '-'}
+                            </td>
+                            <td className="p-3 text-cyan-300 font-light">
+                              {r.temporal?.toFixed(1) || '-'}
+                            </td>
                             <td className="p-3 text-slate-400 font-light text-xs">
                               {Array.isArray(r.tags) ? r.tags.join(', ') : '-'}
                             </td>
