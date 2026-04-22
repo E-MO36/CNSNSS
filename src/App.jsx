@@ -1,36 +1,116 @@
-import React, { useState, useEffect } from 'react';
-import { ChevronDown } from 'lucide-react';
-import { supabase } from './supabase';
+import React, { useEffect, useState } from 'react'
+import { ChevronDown } from 'lucide-react'
+import { supabase } from './supabase'
+
+const SONGS = [
+  {
+    id: 1,
+    title: 'Long Cool Woman (In a Black Dress) - 1999 Remaster',
+    artist: 'The Hollies',
+    album: 'Distant Light (Expanded Edition)',
+    duration: '3:19'
+  },
+  {
+    id: 2,
+    title: 'Your Light',
+    artist: 'The Big Moon',
+    album: 'Walking Like We Do',
+    duration: '5:07'
+  },
+  {
+    id: 3,
+    title: 'Taste Back',
+    artist: 'Harry Styles',
+    album: 'Kiss All The Time. Disco, Occasionally.',
+    duration: '3:41'
+  },
+  {
+    id: 4,
+    title: 'Alaska',
+    artist: 'Maggie Rogers',
+    album: 'Heard It In A Past Life',
+    duration: '3:08'
+  },
+  {
+    id: 5,
+    title: 'DAISIES',
+    artist: 'Justin Bieber',
+    album: 'SWAG',
+    duration: '2:56'
+  },
+  {
+    id: 6,
+    title: 'Last Words',
+    artist: 'Kenny Beats',
+    album: 'LOUIE',
+    duration: '1:49'
+  },
+  {
+    id: 7,
+    title: 'This Must Be the Place (Naive Melody) - 2005 Remaster',
+    artist: 'Talking Heads',
+    album: 'Speaking in Tongues (Deluxe Version)',
+    duration: '4:56'
+  },
+  {
+    id: 8,
+    title: 'All My Love',
+    artist: 'Noah Kahan',
+    album: 'Stick Season',
+    duration: '4:11'
+  },
+  {
+    id: 9,
+    title: 'You Get What You Give',
+    artist: 'New Radicals',
+    album: "Maybe You've Been Brainwashed Too",
+    duration: '5:00'
+  },
+  {
+    id: 10,
+    title: 'SPEED DEMON',
+    artist: 'Justin Bieber',
+    album: 'SWAG II',
+    duration: '3:31'
+  },
+  {
+    id: 11,
+    title: 'Hey Ya!',
+    artist: 'Outkast',
+    album: 'Speakerboxxx/The Love Below',
+    duration: '3:55'
+  }
+]
 
 export default function App() {
   useEffect(() => {
-    const existing = document.getElementById('cnsnss-fonts');
+    const existing = document.getElementById('cnsnss-fonts')
     if (!existing) {
-      const link = document.createElement('link');
-      link.id = 'cnsnss-fonts';
+      const link = document.createElement('link')
+      link.id = 'cnsnss-fonts'
       link.href =
-        'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap';
-      link.rel = 'stylesheet';
-      document.head.appendChild(link);
+        'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap'
+      link.rel = 'stylesheet'
+      document.head.appendChild(link)
     }
     document.body.style.fontFamily =
-      "'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  }, []);
+      "'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+  }, [])
 
-  const [userId, setUserId] = useState('');
-  const [hasStarted, setHasStarted] = useState(false);
-  const [currentSongIndex, setCurrentSongIndex] = useState(0);
-  const [ratings, setRatings] = useState({});
-  const [selectedTags, setSelectedTags] = useState([]);
-  const [allResponses, setAllResponses] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showVectorInput, setShowVectorInput] = useState(false);
-  const [showTags, setShowTags] = useState(false);
-  const [showResults, setShowResults] = useState(false);
-  const [vizSong, setVizSong] = useState(0);
-  const [vizVector, setVizVector] = useState('wonder');
-  const [highlightUser, setHighlightUser] = useState('');
-  const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [userId, setUserId] = useState('')
+  const [hasStarted, setHasStarted] = useState(false)
+  const [currentSongIndex, setCurrentSongIndex] = useState(0)
+  const [ratings, setRatings] = useState({})
+  const [selectedTags, setSelectedTags] = useState([])
+  const [allResponses, setAllResponses] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [showVectorInput, setShowVectorInput] = useState(false)
+  const [showTags, setShowTags] = useState(false)
+  const [showResults, setShowResults] = useState(false)
+  const [vizSong, setVizSong] = useState(0)
+  const [vizVector, setVizVector] = useState('wonder')
+  const [highlightUser, setHighlightUser] = useState('')
+  const [showAdminPanel, setShowAdminPanel] = useState(false)
 
   const vectors = [
     { id: 'wonder', label: 'Wonder ↔ Mundane', low: 'Mundane', high: 'Wonder' },
@@ -38,7 +118,7 @@ export default function App() {
     { id: 'power', label: 'Power ↔ Tenderness', low: 'Tenderness', high: 'Power' },
     { id: 'peace', label: 'Peace ↔ Tension', low: 'Tension', high: 'Peace' },
     { id: 'temporal', label: 'Past ↔ Future', low: 'Past', high: 'Future' }
-  ];
+  ]
 
   const tags = [
     'Gym',
@@ -51,83 +131,68 @@ export default function App() {
     'Emotional',
     'Uplifting',
     'Relaxing'
-  ];
-
-  const songs = [
-    { id: 0, title: 'Song 1', artist: 'Artist 1', album: 'Album Name', year: '2024' },
-    { id: 1, title: 'Song 2', artist: 'Artist 2', album: 'Album Name', year: '2024' },
-    { id: 2, title: 'Song 3', artist: 'Artist 3', album: 'Album Name', year: '2024' },
-    { id: 3, title: 'Song 4', artist: 'Artist 4', album: 'Album Name', year: '2024' },
-    { id: 4, title: 'Song 5', artist: 'Artist 5', album: 'Album Name', year: '2024' },
-    { id: 5, title: 'Song 6', artist: 'Artist 6', album: 'Album Name', year: '2024' },
-    { id: 6, title: 'Song 7', artist: 'Artist 7', album: 'Album Name', year: '2024' },
-    { id: 7, title: 'Song 8', artist: 'Artist 8', album: 'Album Name', year: '2024' },
-    { id: 8, title: 'Song 9', artist: 'Artist 9', album: 'Album Name', year: '2024' },
-    { id: 9, title: 'Song 10', artist: 'Artist 10', album: 'Album Name', year: '2024' },
-    { id: 10, title: 'Song 11', artist: 'Artist 11', album: 'Album Name', year: '2024' },
-    { id: 11, title: 'Song 12', artist: 'Artist 12', album: 'Album Name', year: '2024' }
-  ];
+  ]
 
   useEffect(() => {
-    const initialRatings = {};
+    const initialRatings = {}
     vectors.forEach((v) => {
-      initialRatings[v.id] = 5;
-    });
-    setRatings(initialRatings);
-  }, []);
+      initialRatings[v.id] = 5
+    })
+    setRatings(initialRatings)
+  }, [])
 
   useEffect(() => {
-    loadAllResponses();
-  }, []);
+    loadAllResponses()
+  }, [])
 
   const loadAllResponses = async () => {
-    setLoading(true);
+    setLoading(true)
 
     const { data, error } = await supabase
       .from('responses')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
 
     if (error) {
-      console.error('Error loading responses:', error);
-      setAllResponses([]);
+      console.error('Error loading responses:', error)
+      setAllResponses([])
     } else {
-      setAllResponses(data || []);
+      setAllResponses(data || [])
     }
 
-    setLoading(false);
-  };
+    setLoading(false)
+  }
 
   const getContextData = () => {
-    const now = new Date();
+    const now = new Date()
     const timestamp = `${String(now.getHours()).padStart(2, '0')}:${String(
       now.getMinutes()
     ).padStart(2, '0')} ${now.getFullYear()}.${String(now.getMonth() + 1).padStart(
       2,
       '0'
-    )}.${String(now.getDate()).padStart(2, '0')}`;
+    )}.${String(now.getDate()).padStart(2, '0')}`
 
     return {
       timestamp,
       location: 'Boston, MA',
       weather: '52°F | Partly Cloudy'
-    };
-  };
+    }
+  }
 
   const handleSubmit = async () => {
-    const hasChangedVectors = Object.entries(ratings).some(([, val]) => val !== 5);
-    const hasTags = selectedTags.length > 0;
+    const hasChangedVectors = Object.entries(ratings).some(([, val]) => val !== 5)
+    const hasTags = selectedTags.length > 0
 
     if (!hasChangedVectors && !hasTags) {
-      alert('Please move at least one slider OR select at least one tag before submitting');
-      return;
+      alert('Please move at least one slider OR select at least one tag before submitting')
+      return
     }
 
-    const context = getContextData();
+    const context = getContextData()
 
     const response = {
       user_id: userId,
-      song_id: currentSongIndex,
+      song_id: currentSongIndex + 1,
       timestamp_text: context.timestamp,
       location_text: context.location,
       weather_text: context.weather,
@@ -137,100 +202,100 @@ export default function App() {
       peace: hasChangedVectors ? ratings.peace : null,
       temporal: hasChangedVectors ? ratings.temporal : null,
       tags: selectedTags
-    };
+    }
 
-    const { error } = await supabase.from('responses').insert([response]);
+    const { error } = await supabase.from('responses').insert([response])
 
     if (error) {
-      console.error('Error saving response:', error);
-      alert(`Error saving response: ${error.message}`);
-      return;
+      console.error('Error saving response:', error)
+      alert(`Error saving response: ${error.message}`)
+      return
     }
 
-    await loadAllResponses();
+    await loadAllResponses()
 
-    if (currentSongIndex < songs.length - 1) {
-      setCurrentSongIndex(currentSongIndex + 1);
-      setSelectedTags([]);
-      const resetRatings = {};
-      vectors.forEach((v) => (resetRatings[v.id] = 5));
-      setRatings(resetRatings);
+    if (currentSongIndex < SONGS.length - 1) {
+      setCurrentSongIndex(currentSongIndex + 1)
+      setSelectedTags([])
+      const resetRatings = {}
+      vectors.forEach((v) => (resetRatings[v.id] = 5))
+      setRatings(resetRatings)
     } else {
-      alert('All songs rated! Thank you.');
+      alert('All songs rated! Thank you.')
     }
-  };
+  }
 
   const toggleTag = (tag) => {
     setSelectedTags((prev) =>
       prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    );
-  };
+    )
+  }
 
   const generateHistogramData = (songId, vectorId) => {
     const bins = Array.from({ length: 11 }, (_, i) => ({
       range: String(i),
       value: i,
       count: 0
-    }));
+    }))
 
     const relevantResponses = allResponses.filter((r) => {
-      if (r.song_id !== songId) return false;
-      const value = r[vectorId];
-      return value !== null && value !== undefined;
-    });
+      if (r.song_id !== songId) return false
+      const value = r[vectorId]
+      return value !== null && value !== undefined
+    })
 
     relevantResponses.forEach((response) => {
-      const value = Math.round(response[vectorId]);
-      const bin = bins.find((b) => b.value === value);
-      if (bin) bin.count++;
-    });
+      const value = Math.round(response[vectorId])
+      const bin = bins.find((b) => b.value === value)
+      if (bin) bin.count++
+    })
 
-    return { bins, total: relevantResponses.length };
-  };
+    return { bins, total: relevantResponses.length }
+  }
 
   const calculateStats = (songId, vectorId) => {
     const values = allResponses
       .filter((r) => r.song_id === songId && r[vectorId] != null)
-      .map((r) => r[vectorId]);
+      .map((r) => r[vectorId])
 
-    if (values.length === 0) return null;
+    if (values.length === 0) return null
 
-    const mean = values.reduce((a, b) => a + b, 0) / values.length;
-    const sorted = [...values].sort((a, b) => a - b);
+    const mean = values.reduce((a, b) => a + b, 0) / values.length
+    const sorted = [...values].sort((a, b) => a - b)
     const modeCounts = sorted.reduce((acc, val) => {
-      acc[val] = (acc[val] || 0) + 1;
-      return acc;
-    }, {});
+      acc[val] = (acc[val] || 0) + 1
+      return acc
+    }, {})
     const modeValue = Object.keys(modeCounts).reduce((a, b) =>
       modeCounts[a] > modeCounts[b] ? a : b
-    );
+    )
     const variance =
-      values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
-    const stdDev = Math.sqrt(variance);
+      values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length
+    const stdDev = Math.sqrt(variance)
 
     return {
       count: values.length,
       mean: mean.toFixed(1),
       mode: parseFloat(modeValue).toFixed(1),
       stdDev: stdDev.toFixed(1)
-    };
-  };
+    }
+  }
 
   const getTagDistribution = (songId) => {
-    const tagCounts = {};
+    const tagCounts = {}
 
     allResponses
       .filter((r) => r.song_id === songId && Array.isArray(r.tags))
       .forEach((response) => {
         response.tags.forEach((tag) => {
-          tagCounts[tag] = (tagCounts[tag] || 0) + 1;
-        });
-      });
+          tagCounts[tag] = (tagCounts[tag] || 0) + 1
+        })
+      })
 
     return Object.entries(tagCounts)
       .map(([tag, count]) => ({ tag, count }))
-      .sort((a, b) => b.count - a.count);
-  };
+      .sort((a, b) => b.count - a.count)
+  }
 
   if (!hasStarted) {
     return (
@@ -261,14 +326,14 @@ export default function App() {
           </button>
         </div>
       </div>
-    );
+    )
   }
 
-  const context = getContextData();
-  const currentSong = songs[currentSongIndex];
-  const stats = calculateStats(vizSong, vizVector);
-  const { bins } = generateHistogramData(vizSong, vizVector);
-  const tagDist = getTagDistribution(vizSong);
+  const context = getContextData()
+  const currentSong = SONGS[currentSongIndex]
+  const stats = calculateStats(vizSong + 1, vizVector)
+  const { bins } = generateHistogramData(vizSong + 1, vizVector)
+  const tagDist = getTagDistribution(vizSong + 1)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-400 via-gray-500 to-gray-400 p-4 md:p-8">
@@ -286,38 +351,12 @@ export default function App() {
                 <h2 className="text-2xl font-light text-slate-200 tracking-wide">
                   Admin: All Response Data
                 </h2>
-                <div className="flex gap-3">
-                  <button
-                    onClick={async () => {
-                      if (
-                        window.confirm(
-                          `Delete ALL ${allResponses.length} responses? This cannot be undone.`
-                        )
-                      ) {
-                        const { error } = await supabase
-                          .from('responses')
-                          .delete()
-                          .neq('id', 0);
-
-                        if (error) {
-                          alert(`Error clearing data: ${error.message}`);
-                        } else {
-                          await loadAllResponses();
-                          alert('All responses cleared!');
-                        }
-                      }
-                    }}
-                    className="px-4 py-2 bg-red-900/50 border border-red-700 text-red-300 rounded-lg hover:bg-red-900 transition text-sm font-light"
-                  >
-                    Clear All Data
-                  </button>
-                  <button
-                    onClick={() => setShowAdminPanel(false)}
-                    className="px-4 py-2 bg-slate-900 border border-slate-700 text-slate-300 rounded-lg hover:bg-slate-800 transition text-sm font-light"
-                  >
-                    Close
-                  </button>
-                </div>
+                <button
+                  onClick={() => setShowAdminPanel(false)}
+                  className="px-4 py-2 bg-slate-900 border border-slate-700 text-slate-300 rounded-lg hover:bg-slate-800 transition text-sm font-light"
+                >
+                  Close
+                </button>
               </div>
 
               <div className="overflow-x-auto">
@@ -326,6 +365,7 @@ export default function App() {
                     <tr className="border-b border-slate-700">
                       <th className="text-left p-3 text-slate-400 font-light">User</th>
                       <th className="text-left p-3 text-slate-400 font-light">Song</th>
+                      <th className="text-left p-3 text-slate-400 font-light">Artist</th>
                       <th className="text-left p-3 text-slate-400 font-light">Time</th>
                       <th className="text-left p-3 text-slate-400 font-light">Wonder</th>
                       <th className="text-left p-3 text-slate-400 font-light">Joy</th>
@@ -338,32 +378,49 @@ export default function App() {
                   <tbody>
                     {allResponses.length === 0 ? (
                       <tr>
-                        <td colSpan="9" className="text-center p-8 text-slate-500 font-light">
+                        <td colSpan="10" className="text-center p-8 text-slate-500 font-light">
                           No responses yet
                         </td>
                       </tr>
                     ) : (
-                      allResponses.map((r) => (
-                        <tr key={r.id} className="border-b border-slate-800 hover:bg-slate-900/50">
-                          <td className="p-3 text-cyan-300 font-light">{r.user_id}</td>
-                          <td className="p-3 text-slate-300 font-light">
-                            {songs[r.song_id]?.title}
-                          </td>
-                          <td className="p-3 text-slate-400 font-light">{r.timestamp_text}</td>
-                          <td className="p-3 text-cyan-300 font-light">{r.wonder?.toFixed(1) || '-'}</td>
-                          <td className="p-3 text-cyan-300 font-light">{r.joy?.toFixed(1) || '-'}</td>
-                          <td className="p-3 text-cyan-300 font-light">{r.power?.toFixed(1) || '-'}</td>
-                          <td className="p-3 text-cyan-300 font-light">{r.peace?.toFixed(1) || '-'}</td>
-                          <td className="p-3 text-cyan-300 font-light">{r.temporal?.toFixed(1) || '-'}</td>
-                          <td className="p-3 text-slate-400 font-light text-xs">
-                            {Array.isArray(r.tags) ? r.tags.join(', ') : '-'}
-                          </td>
-                        </tr>
-                      ))
+                      allResponses.map((r) => {
+                        const songInfo = SONGS.find((song) => song.id === r.song_id)
+                        return (
+                          <tr key={r.id} className="border-b border-slate-800 hover:bg-slate-900/50">
+                            <td className="p-3 text-cyan-300 font-light">{r.user_id}</td>
+                            <td className="p-3 text-slate-300 font-light">
+                              {songInfo?.title || `Song ${r.song_id}`}
+                            </td>
+                            <td className="p-3 text-slate-400 font-light">
+                              {songInfo?.artist || '-'}
+                            </td>
+                            <td className="p-3 text-slate-400 font-light">{r.timestamp_text}</td>
+                            <td className="p-3 text-cyan-300 font-light">
+                              {r.wonder?.toFixed(1) || '-'}
+                            </td>
+                            <td className="p-3 text-cyan-300 font-light">
+                              {r.joy?.toFixed(1) || '-'}
+                            </td>
+                            <td className="p-3 text-cyan-300 font-light">
+                              {r.power?.toFixed(1) || '-'}
+                            </td>
+                            <td className="p-3 text-cyan-300 font-light">
+                              {r.peace?.toFixed(1) || '-'}
+                            </td>
+                            <td className="p-3 text-cyan-300 font-light">
+                              {r.temporal?.toFixed(1) || '-'}
+                            </td>
+                            <td className="p-3 text-slate-400 font-light text-xs">
+                              {Array.isArray(r.tags) ? r.tags.join(', ') : '-'}
+                            </td>
+                          </tr>
+                        )
+                      })
                     )}
                   </tbody>
                 </table>
               </div>
+
               <p className="mt-4 text-right text-sm text-slate-500 font-light">
                 Total: {allResponses.length}
               </p>
@@ -381,7 +438,7 @@ export default function App() {
               </h2>
               <span className="text-slate-600 text-sm font-light">
                 {String(
-                  allResponses.filter((r) => r.song_id === currentSongIndex).length + 1
+                  allResponses.filter((r) => r.song_id === currentSong.id).length + 1
                 ).padStart(6, '0')}
               </span>
             </div>
@@ -389,7 +446,7 @@ export default function App() {
               {currentSong.artist}
             </p>
             <p className="text-slate-500 text-xs md:text-sm font-light mt-2">
-              {currentSong.album} • {currentSong.year}
+              {currentSong.album} • {currentSong.duration}
             </p>
             <div className="flex flex-wrap gap-2 mt-3 text-xs text-slate-600 font-light">
               <span>{context.timestamp}</span>
@@ -504,19 +561,19 @@ export default function App() {
               onClick={handleSubmit}
               className="flex-1 bg-gradient-to-r from-cyan-500 to-white text-slate-900 px-6 py-3 rounded-xl hover:from-cyan-400 hover:to-gray-100 transition font-medium shadow-xl"
             >
-              {currentSongIndex === songs.length - 1 ? 'End' : 'Submit'}
+              {currentSongIndex === SONGS.length - 1 ? 'End' : 'Submit'}
             </button>
             <button
               onClick={() => {
-                if (currentSongIndex < songs.length - 1) {
-                  setCurrentSongIndex(currentSongIndex + 1);
-                  setSelectedTags([]);
-                  const resetRatings = {};
-                  vectors.forEach((v) => (resetRatings[v.id] = 5));
-                  setRatings(resetRatings);
+                if (currentSongIndex < SONGS.length - 1) {
+                  setCurrentSongIndex(currentSongIndex + 1)
+                  setSelectedTags([])
+                  const resetRatings = {}
+                  vectors.forEach((v) => (resetRatings[v.id] = 5))
+                  setRatings(resetRatings)
                 }
               }}
-              disabled={currentSongIndex === songs.length - 1}
+              disabled={currentSongIndex === SONGS.length - 1}
               className="px-6 py-3 bg-slate-900 border border-slate-700 text-slate-300 rounded-xl hover:bg-slate-800 transition font-light disabled:opacity-30"
             >
               Skip →
@@ -547,9 +604,9 @@ export default function App() {
                     onChange={(e) => setVizSong(parseInt(e.target.value))}
                     className="w-full px-4 py-2 bg-slate-900 border border-slate-700 text-slate-300 rounded-lg text-sm font-light"
                   >
-                    {songs.map((song) => (
-                      <option key={song.id} value={song.id}>
-                        Song {song.id + 1}: {song.title}
+                    {SONGS.map((song, index) => (
+                      <option key={song.id} value={index}>
+                        {song.title} — {song.artist}
                       </option>
                     ))}
                   </select>
@@ -594,19 +651,19 @@ export default function App() {
 
                       <div className="h-64 flex items-end justify-around gap-1 relative">
                         {bins.map((bin, i) => {
-                          const max = Math.max(...bins.map((b) => b.count), 1);
-                          const height = (bin.count / max) * 100;
-                          const showLabel = bin.value % 2 === 0;
+                          const max = Math.max(...bins.map((b) => b.count), 1)
+                          const height = (bin.count / max) * 100
+                          const showLabel = bin.value % 2 === 0
 
                           const userResponse = highlightUser
                             ? allResponses.find(
                                 (r) =>
                                   r.user_id === highlightUser &&
-                                  r.song_id === vizSong &&
+                                  r.song_id === vizSong + 1 &&
                                   r[vizVector] != null &&
                                   Math.round(r[vizVector]) === bin.value
                               )
-                            : null;
+                            : null
 
                           return (
                             <div key={i} className="flex-1 flex flex-col items-center relative">
@@ -633,7 +690,7 @@ export default function App() {
                                 )}
                               </div>
                             </div>
-                          );
+                          )
                         })}
                       </div>
 
@@ -702,5 +759,5 @@ export default function App() {
         )}
       </div>
     </div>
-  );
+  )
 }
