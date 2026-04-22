@@ -1,19 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
-
-const STORAGE_KEY = 'cnsnss_responses';
-
-const loadResponsesFromStorage = () => {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-  } catch {
-    return [];
-  }
-};
-
-const saveResponsesToStorage = (responses) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(responses));
-};
+import { supabase } from './supabase';
 
 export default function App() {
   useEffect(() => {
@@ -95,12 +82,19 @@ export default function App() {
 
   const loadAllResponses = async () => {
     setLoading(true);
-    try {
-      const loaded = loadResponsesFromStorage();
-      setAllResponses(loaded);
-    } catch {
+
+    const { data, error } = await supabase
+      .from('responses')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error loading responses:', error);
       setAllResponses([]);
+    } else {
+      setAllResponses(data || []);
     }
+
     setLoading(false);
   };
 
@@ -130,33 +124,39 @@ export default function App() {
     }
 
     const context = getContextData();
+
     const response = {
-      id: `${userId}-${currentSongIndex}-${Date.now()}`,
-      userId,
-      songId: currentSongIndex,
-      ...context,
-      vectors: hasChangedVectors ? ratings : null,
-      tags: hasTags ? selectedTags : []
+      user_id: userId,
+      song_id: currentSongIndex,
+      timestamp_text: context.timestamp,
+      location_text: context.location,
+      weather_text: context.weather,
+      wonder: hasChangedVectors ? ratings.wonder : null,
+      joy: hasChangedVectors ? ratings.joy : null,
+      power: hasChangedVectors ? ratings.power : null,
+      peace: hasChangedVectors ? ratings.peace : null,
+      temporal: hasChangedVectors ? ratings.temporal : null,
+      tags: selectedTags
     };
 
-    try {
-      const existing = loadResponsesFromStorage();
-      const updated = [...existing, response];
-      saveResponsesToStorage(updated);
-      await loadAllResponses();
+    const { error } = await supabase.from('responses').insert([response]);
 
-      if (currentSongIndex < songs.length - 1) {
-        setCurrentSongIndex(currentSongIndex + 1);
-        setSelectedTags([]);
-        const resetRatings = {};
-        vectors.forEach((v) => (resetRatings[v.id] = 5));
-        setRatings(resetRatings);
-      } else {
-        alert('All songs rated! Thank you.');
-      }
-    } catch (error) {
+    if (error) {
       console.error('Error saving response:', error);
-      alert(`Error saving: ${error.message}. Please try again.`);
+      alert(`Error saving response: ${error.message}`);
+      return;
+    }
+
+    await loadAllResponses();
+
+    if (currentSongIndex < songs.length - 1) {
+      setCurrentSongIndex(currentSongIndex + 1);
+      setSelectedTags([]);
+      const resetRatings = {};
+      vectors.forEach((v) => (resetRatings[v.id] = 5));
+      setRatings(resetRatings);
+    } else {
+      alert('All songs rated! Thank you.');
     }
   };
 
@@ -173,12 +173,14 @@ export default function App() {
       count: 0
     }));
 
-    const relevantResponses = allResponses.filter(
-      (r) => r.songId === songId && r.vectors && r.vectors[vectorId] != null
-    );
+    const relevantResponses = allResponses.filter((r) => {
+      if (r.song_id !== songId) return false;
+      const value = r[vectorId];
+      return value !== null && value !== undefined;
+    });
 
     relevantResponses.forEach((response) => {
-      const value = Math.round(response.vectors[vectorId]);
+      const value = Math.round(response[vectorId]);
       const bin = bins.find((b) => b.value === value);
       if (bin) bin.count++;
     });
@@ -188,8 +190,8 @@ export default function App() {
 
   const calculateStats = (songId, vectorId) => {
     const values = allResponses
-      .filter((r) => r.songId === songId && r.vectors && r.vectors[vectorId] != null)
-      .map((r) => r.vectors[vectorId]);
+      .filter((r) => r.song_id === songId && r[vectorId] != null)
+      .map((r) => r[vectorId]);
 
     if (values.length === 0) return null;
 
@@ -216,8 +218,9 @@ export default function App() {
 
   const getTagDistribution = (songId) => {
     const tagCounts = {};
+
     allResponses
-      .filter((r) => r.songId === songId && r.tags && r.tags.length > 0)
+      .filter((r) => r.song_id === songId && Array.isArray(r.tags))
       .forEach((response) => {
         response.tags.forEach((tag) => {
           tagCounts[tag] = (tagCounts[tag] || 0) + 1;
@@ -247,7 +250,6 @@ export default function App() {
             placeholder="Initials"
             maxLength={3}
             className="w-full px-4 py-3 bg-slate-900 border border-slate-700 text-slate-100 placeholder-slate-500 rounded-xl focus:ring-2 focus:ring-cyan-400 focus:border-transparent font-light mb-6 text-center text-2xl tracking-widest"
-            style={{ fontFamily: "'JetBrains Mono', monospace" }}
           />
 
           <button
@@ -292,9 +294,17 @@ export default function App() {
                           `Delete ALL ${allResponses.length} responses? This cannot be undone.`
                         )
                       ) {
-                        localStorage.removeItem(STORAGE_KEY);
-                        await loadAllResponses();
-                        alert('All responses cleared!');
+                        const { error } = await supabase
+                          .from('responses')
+                          .delete()
+                          .neq('id', 0);
+
+                        if (error) {
+                          alert(`Error clearing data: ${error.message}`);
+                        } else {
+                          await loadAllResponses();
+                          alert('All responses cleared!');
+                        }
                       }
                     }}
                     className="px-4 py-2 bg-red-900/50 border border-red-700 text-red-300 rounded-lg hover:bg-red-900 transition text-sm font-light"
@@ -333,30 +343,20 @@ export default function App() {
                         </td>
                       </tr>
                     ) : (
-                      allResponses.map((r, i) => (
-                        <tr key={i} className="border-b border-slate-800 hover:bg-slate-900/50">
-                          <td className="p-3 text-cyan-300 font-light">{r.userId}</td>
+                      allResponses.map((r) => (
+                        <tr key={r.id} className="border-b border-slate-800 hover:bg-slate-900/50">
+                          <td className="p-3 text-cyan-300 font-light">{r.user_id}</td>
                           <td className="p-3 text-slate-300 font-light">
-                            {songs[r.songId]?.title}
+                            {songs[r.song_id]?.title}
                           </td>
-                          <td className="p-3 text-slate-400 font-light">{r.timestamp}</td>
-                          <td className="p-3 text-cyan-300 font-light">
-                            {r.vectors?.wonder?.toFixed(1) || '-'}
-                          </td>
-                          <td className="p-3 text-cyan-300 font-light">
-                            {r.vectors?.joy?.toFixed(1) || '-'}
-                          </td>
-                          <td className="p-3 text-cyan-300 font-light">
-                            {r.vectors?.power?.toFixed(1) || '-'}
-                          </td>
-                          <td className="p-3 text-cyan-300 font-light">
-                            {r.vectors?.peace?.toFixed(1) || '-'}
-                          </td>
-                          <td className="p-3 text-cyan-300 font-light">
-                            {r.vectors?.temporal?.toFixed(1) || '-'}
-                          </td>
+                          <td className="p-3 text-slate-400 font-light">{r.timestamp_text}</td>
+                          <td className="p-3 text-cyan-300 font-light">{r.wonder?.toFixed(1) || '-'}</td>
+                          <td className="p-3 text-cyan-300 font-light">{r.joy?.toFixed(1) || '-'}</td>
+                          <td className="p-3 text-cyan-300 font-light">{r.power?.toFixed(1) || '-'}</td>
+                          <td className="p-3 text-cyan-300 font-light">{r.peace?.toFixed(1) || '-'}</td>
+                          <td className="p-3 text-cyan-300 font-light">{r.temporal?.toFixed(1) || '-'}</td>
                           <td className="p-3 text-slate-400 font-light text-xs">
-                            {r.tags?.join(', ') || '-'}
+                            {Array.isArray(r.tags) ? r.tags.join(', ') : '-'}
                           </td>
                         </tr>
                       ))
@@ -381,7 +381,7 @@ export default function App() {
               </h2>
               <span className="text-slate-600 text-sm font-light">
                 {String(
-                  allResponses.filter((r) => r.songId === currentSongIndex).length + 1
+                  allResponses.filter((r) => r.song_id === currentSongIndex).length + 1
                 ).padStart(6, '0')}
               </span>
             </div>
@@ -601,10 +601,10 @@ export default function App() {
                           const userResponse = highlightUser
                             ? allResponses.find(
                                 (r) =>
-                                  r.userId === highlightUser &&
-                                  r.songId === vizSong &&
-                                  r.vectors &&
-                                  Math.round(r.vectors[vizVector]) === bin.value
+                                  r.user_id === highlightUser &&
+                                  r.song_id === vizSong &&
+                                  r[vizVector] != null &&
+                                  Math.round(r[vizVector]) === bin.value
                               )
                             : null;
 
